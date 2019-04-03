@@ -1,21 +1,7 @@
-import React, {
-  Component,
-  useEffect,
-  useRef,
-  useCallback,
-  useState,
-} from 'react';
-import { Direction, Game, Map } from './game/models';
+import React, { Component, useEffect, useRef, useState } from 'react';
+import { Direction, Map } from './game/models';
 import { getInputKey } from './game/input';
-import {
-  inputToDirection,
-  updateDirection,
-  defaultGame,
-  moveToDirection,
-  snakeFoodEaten,
-  tick,
-} from './game/snake';
-import { randomFood, updateMap } from './game/map';
+import { inputToDirection, defaultGame, tick } from './game/snake';
 
 function drawMap(map: Map): void {
   const strGrid = map.grid
@@ -34,16 +20,18 @@ function drawMap(map: Map): void {
 function useDirection() {
   const directionRef = useRef(Direction.East);
 
-  const input = useCallback(function(event: KeyboardEvent) {
-    const inputKey = getInputKey(event.keyCode);
-    const direction = inputToDirection(inputKey);
-    if (direction !== Direction.None) {
-      directionRef.current = direction;
-    }
-  }, []);
-
   useEffect(function() {
+    function input(event: KeyboardEvent) {
+      const inputKey = getInputKey(event.keyCode);
+      const newDirection = inputToDirection(inputKey);
+      if (newDirection !== Direction.None) {
+        directionRef.current = newDirection;
+      }
+    }
+
     document.addEventListener('keydown', input);
+
+    return () => document.removeEventListener('keydown', input);
   }, []);
 
   return { directionRef };
@@ -51,17 +39,18 @@ function useDirection() {
 
 function Snake() {
   const [game, setGame] = useState(defaultGame());
-  const { directionRef } = useDirection();
 
-  useEffect(() => {
-    drawMap(game.map);
-  }, [game]);
+  const { directionRef } = useDirection();
 
   useEffect(function() {
     setInterval(function() {
       setGame((prev) => tick(prev, directionRef.current));
     }, 300);
   }, []);
+
+  useEffect(() => {
+    drawMap(game.map);
+  }, [game]);
 
   return <div />;
 }
