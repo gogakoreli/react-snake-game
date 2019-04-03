@@ -1,7 +1,12 @@
-import React, { Component, useEffect, useRef, useState } from 'react';
+import React, {
+  Component,
+  useEffect,
+  useReducer,
+} from 'react';
 import { Direction, Map } from './game/models';
 import { getInputKey } from './game/input';
 import { inputToDirection, defaultGame, tick } from './game/snake';
+import { initialGameState, gameReducer, GameState } from './game.reducer';
 
 function drawMap(map: Map): void {
   const strGrid = map.grid
@@ -17,15 +22,13 @@ function drawMap(map: Map): void {
   console.log();
 }
 
-function useDirection() {
-  const directionRef = useRef(Direction.East);
-
+function useDirection(dispatch: any): void {
   useEffect(function() {
     function input(event: KeyboardEvent) {
       const inputKey = getInputKey(event.keyCode);
       const newDirection = inputToDirection(inputKey);
       if (newDirection !== Direction.None) {
-        directionRef.current = newDirection;
+        dispatch({ type: 'UPDATE_DIRECTION', data: newDirection });
       }
     }
 
@@ -33,24 +36,30 @@ function useDirection() {
 
     return () => document.removeEventListener('keydown', input);
   }, []);
+}
 
-  return { directionRef };
+function useTick(dispatch: any) {
+  useEffect(function() {
+    setInterval(function() {
+      dispatch({ type: 'TICK' });
+    }, 300);
+  }, []);
+}
+
+function useDraw(state: GameState) {
+  useEffect(() => {
+    if (state.shouldRender) {
+      drawMap(state.game.map);
+    }
+  }, [state]);
 }
 
 function Snake() {
-  const [game, setGame] = useState(defaultGame());
+  const [state, dispatch] = useReducer(gameReducer, initialGameState);
 
-  const { directionRef } = useDirection();
-
-  useEffect(function() {
-    setInterval(function() {
-      setGame((prev) => tick(prev, directionRef.current));
-    }, 300);
-  }, []);
-
-  useEffect(() => {
-    drawMap(game.map);
-  }, [game]);
+  useTick(dispatch);
+  useDirection(dispatch);
+  useDraw(state);
 
   return <div />;
 }
